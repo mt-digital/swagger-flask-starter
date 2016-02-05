@@ -1,0 +1,271 @@
+---
+swagger: '2.0'
+info:
+  version: "0.0.1"
+  title: Virtual Watershed Data Management
+
+
+#host: virtualwatershed.org
+host: localhost\:5000
+basePath: /api/v1
+
+schemes:
+    - http
+    - https
+consumes:
+    - application/json
+produces:
+    - application/json
+
+tags:
+- name: resources & files
+- name: users
+  #externalDocs:
+    #description: |
+        #Relevant citations are 
+#- name: "store"
+  #description: "Access to Petstore orders"
+#- name: "user"
+  #description: "Operations about user"
+  #externalDocs:
+    #description: "Find out more about our store"
+    #url: "http://swagger.io"
+
+paths:
+    # We only provide public records at this time
+    /resources:
+        get:
+            summary: search for resources
+            tags:
+                - resources & files
+            operationId: getResrouceById
+
+            parameters:
+                - name: contributor
+                  in: query
+                  description: |
+                      WC-WAVE researcher; see 
+                      http://dublincore.org/documents/dcmi-terms/#elements-contributor
+                  type: array
+                  items: string
+
+                - name: title
+                  in: query
+                  description: |
+                      resource title; see
+                      http://dublincore.org/documents/dcmi-terms/#elements-title
+                  type: string
+
+                - name: model
+                  in: query
+                  description: |
+                      The model of interest. Standard names used should be
+                      'isnobal', 'casimir', 'dflow', 'prms', or 'hydrogeosphere'.
+                      Case-insensitive.
+                  type: string
+
+                - name: watershed
+                  in: query
+                  description: |
+                      one of 'reynolds creek', 'dry creek', 'valles caldera',
+                      or 'lehman creek'
+                  type: string
+
+                - name: page
+                  in: query
+                  description: page number of paginated query
+                  type: integer
+
+                - name: per_page
+                  in: query
+                  description: number to return per page
+                  type: integer
+
+            responses:
+                200:
+                    description: "successful operation"
+                    schema:
+                        type: "array"
+                        items:
+                            $ref: "#/definitions/Resource"
+
+        post:
+            summary: create a new resource
+            tags: 
+                - resources & files
+            operationId: createNewResource
+
+            parameters:
+                - name: model
+                  in: body
+                  description: |
+                      The model of interest. Standard names used should be
+                      'isnobal', 'casimir', 'dflow', 'prms', or 'hydrogeosphere'.
+                      Case-insensitive.
+                  type: string
+
+                - name: parentResource
+                  in: body
+                  description: id of the parent of resource being created
+                  type: string
+            
+            responses:
+                200:
+                    description: "successful operation"
+                    schema:
+                        $ref: "#/definitions/Resource" 
+
+
+
+    /resources/{resourceId}:
+        get:
+            summary: lookup a resource by its id
+            tags:
+                - resources & files
+            operationId: getResrouceById
+
+            responses:
+                200:
+                    description: "successful operation"
+                    schema:
+                        $ref: "#/definitions/Resource" 
+
+        delete:
+            summary: remove a resource
+            tags:
+                - resources & files
+            operationId:
+                deleteResourceById
+
+    /resources/{resourceId}/files/{fileId}:
+        get:
+            summary: lookup a file by its id
+            tags:
+                - resources & files
+            operationId: getResrouceById
+
+            responses:
+                200: 
+                    description: "successful operation"
+                    schema:
+                        $ref: "#/definitions/File"
+                404:
+                    description: "file with {fileId} not found"
+
+        delete:
+            summary: remove a file
+            tags:
+                - resources & files
+            operationId: deleteFileById
+
+            responses:
+                200: 
+                    description: "successful operation"
+                404:
+                    description: "file with {fileId} not found"
+    
+    /resources/{resourceId}/files:
+        
+        get:
+            tags:
+                - resources & files
+            responses:
+                200:
+                    description: "successful operation"
+                    schema:
+                        type: "array"
+                        items:
+                            $ref: "#/definitions/File"
+        post:
+            tags:
+                - resources & files
+            responses:
+                200:
+                    description: "successful operation"
+                    schema:
+                        type: 
+                            $ref: "#/definitions/File"
+
+###################
+#   DEFINITIONS   #
+###################
+# Want to use this to define Resources and Users. For Resources reference
+# HydroShare/Dublin Core and pick a few. If the user wants to, they can 
+# add all sorts of metadata, so we will put in all 11 DC fields, but make
+# only a couple of them (title, description, eventually authors) required. 
+definitions:
+
+    Resource:
+
+        type: object
+        required:  # marking all as 'required' so 'optional' doesn't show in model
+            - title
+            - contributor
+            - description
+            - dateSubmitted
+            - model
+            - watershed
+            - identifier
+        properties:
+            title:
+                type: string
+            contributor:
+                type: array
+                items: string
+                description: auto-generated based on user auth for initial contributor
+            description:
+                type: string
+            dateSubmitted:
+                type: string
+                format: date-time
+                description: auto-generated by server
+            model:
+                type: string
+            watershed:
+                type: string
+            identifier:
+                type: string
+                description: auto-generated by server
+            parentResourceId:
+                type: string
+                description: parent's id if one exists
+            childResourceIds:
+                type: array
+                items: string
+                description: list of children's ids if any exist
+    
+    File:
+        type: object
+        required:  # marking all as 'required' so 'optional' doesn't show in model
+            - name
+            - contributor
+            - description
+            - dateSubmitted
+            - model
+            - watershed
+            - identifier
+        properties:
+            name:
+                type: string
+                description: file name
+            contributor:
+                type: array
+                items: string
+                description: auto-generated based on user auth for initial contributor
+            description:
+                type: string
+            dateSubmitted:
+                type: string
+                format: date-time
+                description: auto-generated by server
+            model:
+                type: string
+            watershed:
+                type: string
+            identifier:
+                type: string
+                description: auto-generated by server
+
+    # Users:
+
+    # File:
