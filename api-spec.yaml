@@ -1,9 +1,22 @@
 ---
 swagger: '2.0'
 info:
-  version: "0.0.1"
-  title: Virtual Watershed Data Management
-
+    version: "0.0.1"
+    title: Virtual Watershed Data Management
+    description: |
+        This Data Management API is meant to be used as an adaptor layer 
+        for the basic data sharing and transfer functionality of the 
+        virtual watershed and the existing or planned integrations between
+        the Virtual Watershed model server, GSToR, HydroShare, and any other
+        systems that our leadership or watershed modelers suggest or request.
+        Part of the goal of this is to provide a simple, standards-based
+        interface so that developers can quickly access basic data management
+        functionality, but we reinvent the wheel as little as possible. For
+        example, if a resource or file has been shared, we use OWL sameAs
+        with references in the Swagger externalDocs section of 
+        PID -> properties -> sameAs. We follow the lead of 
+        <a href="http://goo.gl/Pb906G">Horsburgh, et al., in their June 2015 JAWRA Paper on HydroShare</a>
+        and use Dublin Core metadata fields where appropriate. 
 
 #host: virtualwatershed.org
 host: localhost\:5000
@@ -18,42 +31,37 @@ produces:
     - application/json
 
 tags:
-- name: resources & files
+- name: resources
+- name: files
 - name: users
-  #externalDocs:
-    #description: |
-        #Relevant citations are 
-#- name: "store"
-  #description: "Access to Petstore orders"
-#- name: "user"
-  #description: "Operations about user"
-  #externalDocs:
-    #description: "Find out more about our store"
-    #url: "http://swagger.io"
+
 
 paths:
-    # We only provide public records at this time
+
+    #############
+    # Resources #
+    #############
     /resources:
         get:
             summary: search for resources
             tags:
-                - resources & files
+                - resources
             operationId: getResrouceById
 
             parameters:
                 - name: contributor
                   in: query
-                  description: |
-                      WC-WAVE researcher; see 
-                      http://dublincore.org/documents/dcmi-terms/#elements-contributor
+                  description: WC-WAVE researcher
+                  externalDocs:
+                      url: http://dublincore.org/documents/dcmi-terms/#elements-contributor
                   type: array
                   items: string
 
                 - name: title
                   in: query
-                  description: |
-                      resource title; see
-                      http://dublincore.org/documents/dcmi-terms/#elements-title
+                  description: resource title
+                  externalDocs:
+                      url: http://dublincore.org/documents/dcmi-terms/#elements-title
                   type: string
 
                 - name: model
@@ -92,37 +100,70 @@ paths:
         post:
             summary: create a new resource
             tags: 
-                - resources & files
+                - resources
             operationId: createNewResource
 
             parameters:
+
+                - name: title
+                  in: query
+                  description: resource title
+                  externalDocs:
+                      url: http://dublincore.org/documents/dcmi-terms/#elements-title
+                  type: string
+                  required: true
+
                 - name: model
                   in: body
                   description: |
                       The model of interest. Standard names used should be
                       'isnobal', 'casimir', 'dflow', 'prms', or 'hydrogeosphere'.
-                      Case-insensitive.
+                      This will not, however, be enforced by the server, it
+                      must be enforced by the client.
                   type: string
+                  required: true
+
+                - name: watershed
+                  in: query
+                  description: |
+                      one of 'reynolds creek', 'dry creek', 'valles caldera',
+                      or 'lehman creek'.
+                      This will not, however, be enforced by the server, it
+                      must be enforced by the client.
+                  type: string
+                  required: true
 
                 - name: parentResource
                   in: body
                   description: id of the parent of resource being created
                   type: string
             
+                - name: sessionToken
+                  in: body
+                  description: |
+                      authentication token returned by "#/login" route
+                  type: string
+                  required: true
+
             responses:
                 200:
                     description: "successful operation"
                     schema:
                         $ref: "#/definitions/Resource" 
-
-
 
     /resources/{resourceId}:
         get:
             summary: lookup a resource by its id
             tags:
-                - resources & files
-            operationId: getResrouceById
+                - resources
+            operationId: getResrouce
+
+            parameters:
+                - name: resourceId
+                  in: path
+                  required: true
+                  type: string
+
 
             responses:
                 200:
@@ -130,45 +171,85 @@ paths:
                     schema:
                         $ref: "#/definitions/Resource" 
 
+        put:
+            summary: update an existing resource
+            tags:
+                - resources
+            operationId: updateResource
+
+            parameters:
+
+                - name: title
+                  in: body
+                  description: resource title
+                  externalDocs:
+                      url: http://dublincore.org/documents/dcmi-terms/#elements-title
+                  type: string
+
+                - name: model
+                  in: body
+                  description: |
+                      The model of interest. Standard names used should be
+                      'isnobal', 'casimir', 'dflow', 'prms', or 'hydrogeosphere'.
+                      This will not, however, be enforced by the server, it
+                      must be enforced by the client.
+                  type: string
+
+                - name: watershed
+                  in: body
+                  description: |
+                      one of 'reynolds creek', 'dry creek', 'valles caldera',
+                      or 'lehman creek'.
+                      This will not, however, be enforced by the server, it
+                      must be enforced by the client.
+                  type: string
+
+                - name: parentResource
+                  in: body
+                  description: id of the parent of resource being created
+                  type: string
+
+                - name: resourceId
+                  in: path
+                  required: true
+                  type: string
+
+                - name: sessionToken
+                  in: body
+                  description: |
+                      authentication token returned by "#/login" route
+                  type: string
+                  required: true
+
         delete:
             summary: remove a resource
+            parameters:
+                - name: resourceId
+                  in: path
+                  required: true
+                  type: string
+
+                - name: sessionToken
+                  in: body
+                  description: |
+                      authentication token returned by "#/login" route
+                  type: string
+                  required: true
             tags:
-                - resources & files
+                - resources
             operationId:
-                deleteResourceById
-
-    /resources/{resourceId}/files/{fileId}:
-        get:
-            summary: lookup a file by its id
-            tags:
-                - resources & files
-            operationId: getResrouceById
-
-            responses:
-                200: 
-                    description: "successful operation"
-                    schema:
-                        $ref: "#/definitions/File"
-                404:
-                    description: "file with {fileId} not found"
-
-        delete:
-            summary: remove a file
-            tags:
-                - resources & files
-            operationId: deleteFileById
-
-            responses:
-                200: 
-                    description: "successful operation"
-                404:
-                    description: "file with {fileId} not found"
+                deleteResource
     
+    #########
+    # Files #
+    #########
     /resources/{resourceId}/files:
         
         get:
             tags:
-                - resources & files
+                - files
+            summary: list a resource's files
+            description: get a list of all files associated with the given resourceId
             responses:
                 200:
                     description: "successful operation"
@@ -178,13 +259,207 @@ paths:
                             $ref: "#/definitions/File"
         post:
             tags:
-                - resources & files
+                - files
+            summary: create a new file
+            operationId: createFile
+            parameters:
+
+                - name: name
+                  in: body
+                  description: file name
+                  externalDocs:
+                      url: http://dublincore.org/documents/dcmi-terms/#elements-title
+                  type: string
+                  required: true
+
+                - name: model
+                  in: body
+                  description: |
+                      The model of interest. Standard names used should be
+                      'isnobal', 'casimir', 'dflow', 'prms', or 'hydrogeosphere'.
+                      This will not, however, be enforced by the server, it
+                      must be enforced by the client.
+                  type: string
+                  required: true
+
+                - name: watershed
+                  in: body
+                  description: |
+                      one of 'reynolds creek', 'dry creek', 'valles caldera',
+                      or 'lehman creek'.
+                      This will not, however, be enforced by the server, it
+                      must be enforced by the client.
+                  type: string
+                  required: true
+
+                - name: resourceId
+                  in: path
+                  required: true
+                  type: string
+
+                - name: sessionToken
+                  in: body
+                  description: |
+                      authentication token returned by "#/login" route
+                  type: string
+                  required: true
+
             responses:
                 200:
                     description: "successful operation"
                     schema:
                         type: 
                             $ref: "#/definitions/File"
+
+    /resources/{resourceId}/files/{fileId}:
+
+        get:
+            tags:
+                - files
+            operationId: lookupFile
+            summary: lookup a file by its id
+            parameters:
+                - name: fileId
+                  in: path
+                  required: true
+                  type: string
+
+                - name: resourceId
+                  in: path
+                  required: true
+                  type: string
+            responses:
+                200: 
+                    description: "successful operation"
+                    schema:
+                        $ref: "#/definitions/File"
+                404:
+                    description: "file with {fileId} not found"
+
+        put:
+            tags:
+                - files
+            operationId: updateFile
+            summary: update a file and/or its metadata
+            parameters:
+
+                - name: name
+                  in: body
+                  description: file name
+                  externalDocs:
+                      url: http://dublincore.org/documents/dcmi-terms/#elements-title
+                  type: string
+
+                - name: model
+                  in: body
+                  description: |
+                      The model of interest. Standard names used should be
+                      'isnobal', 'casimir', 'dflow', 'prms', or 'hydrogeosphere'.
+                      This will not, however, be enforced by the server, it
+                      must be enforced by the client.
+                  type: string
+
+                - name: watershed
+                  in: body
+                  description: |
+                      one of 'reynolds creek', 'dry creek', 'valles caldera',
+                      or 'lehman creek'.
+                      This will not, however, be enforced by the server, it
+                      must be enforced by the client.
+                  type: string
+
+                - name: fileId
+                  in: path
+                  required: true
+                  type: string
+
+                - name: resourceId
+                  in: path
+                  required: true
+                  type: string
+
+                - name: sessionToken
+                  in: body
+                  description: |
+                      authentication token returned by "#/login" route
+                  type: string
+                  required: true
+
+            responses:
+                200:
+                    description: file metadata successfully updated
+                    schema:
+                        type: 
+                            $ref: "#/definitions/File"
+                404:
+                    description: fileId not found
+
+        delete:
+            summary: remove a file
+            tags:
+                - files
+            operationId: deleteFile
+            parameters:
+                - name: sessionToken
+                  in: body
+                  description: |
+                      authentication token returned by "#/login" route
+                  type: string
+
+                - name: fileId
+                  in: path
+                  required: true
+                  type: string
+
+                - name: resourceId
+                  in: path
+                  required: true
+                  type: string
+
+            responses:
+                200: 
+                    description: file successfully removed
+                404:
+                    description: fileId not found
+
+    #########
+    # Users #
+    #########
+    /login:
+        post:
+            tags:
+                - users
+            parameters:
+                - name: email
+                  in: body
+                  required: true
+                  description: user's email, also used as id
+                - name: password
+                  in: body
+                  required: true
+                  
+            responses:
+                200:
+                    schema: 
+                        $ref: "#/definitions/LoginInfo"
+                    description: login successful, returns session token
+                401:
+                    description: authentication error
+    /logout:
+        post:
+            tags:
+                - users
+            parameters:
+                - name: sessionToken
+                  in: body
+                  description: session token to be deactivated
+                  type: string
+                  required: true
+            responses:
+                200:
+                    description: logout successful
+                404:
+                    description: sessionToken does not exist or is no longer active
 
 ###################
 #   DEFINITIONS   #
@@ -205,7 +480,7 @@ definitions:
             - dateSubmitted
             - model
             - watershed
-            - identifier
+            - pid
         properties:
             title:
                 type: string
@@ -223,9 +498,12 @@ definitions:
                 type: string
             watershed:
                 type: string
-            identifier:
-                type: string
-                description: auto-generated by server
+            pid:
+                type: object
+                description: auto-generated by server(s)
+                schema:
+                    type:
+                        $ref: "#/definitions/PID"
             parentResourceId:
                 type: string
                 description: parent's id if one exists
@@ -262,10 +540,67 @@ definitions:
                 type: string
             watershed:
                 type: string
-            identifier:
+            pid:
+                type: object
+                description: auto-generated by server(s)
+                schema:
+                    type:
+                        $ref: "#/definitions/PID"
+
+    User:
+        type: object
+        required:
+            - email
+            - name
+            - affiliation
+            - city
+            - state
+        properties:
+            email:
                 type: string
-                description: auto-generated by server
+                description: persistent email that the author expects could be used throughout career
+            name:
+                type: string
+                description: user name, should be same as academic papers
+            affiliation:
+                type: string
+                description: current academic/institutional affiliation
+            city:
+                type: string
+                description: |
+                    either city of residence of user or city of institution, 
+                    whichever is more appropriate
+            state: 
+                type: string
+                description: 
+                    either state of residence of user or state of institution,
+                    whichever is more appropriate
 
-    # Users:
+    PID:
+        type: object
+        required:
+            - pid
+        properties:
+            pid:
+                type: string
+                description: Virtual Watershed Data Management persistent identifier
+            sameAs:
+                type: array
+                items: string
+                description: |
+                    array of persistent identifiers used when resources or
+                    files are synced with or imported from other repositories 
+                    (GSToR, HydroShare)
+                extarnalDocs:
+                    url: https://www.w3.org/TR/owl-ref/#sameAs-def
+                    description: Web Ontology Language sameAs
 
-    # File:
+    LoginInfo:
+        type: object
+        required:
+            - sessionToken
+        properties:
+            sessionToken:
+                type: string
+                description: used to authenticate to protected routes
+
